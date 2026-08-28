@@ -1,0 +1,102 @@
+{
+  "allowList": [
+    "52.65.187.101/32",
+    "16.176.119.188/32",
+    "3.106.29.174/32",
+    "52.64.212.90/32",
+    "52.65.171.236/32",
+    "106.70.127.103/32"
+  ],
+  "rules": [
+    {
+      "name": "CRS_ExceptSize_OnForms",
+      "priority": 1,
+      "overrideAction": { "none": {} },
+      "statement": {
+        "managedRuleGroupStatement": {
+          "name": "AWSManagedRulesCommonRuleSet",
+          "vendorName": "AWS",
+          "excludedRules": [
+            { "name": "SizeRestrictions_BODY" }
+          ],
+          "scopeDownStatement": {
+            "byteMatchStatement": {
+              "fieldToMatch": { "uriPath": {} },
+              "positionalConstraint": "STARTS_WITH",
+              "searchString": "/api/forms",
+              "textTransformations": [{ "priority": 0, "type": "NONE" }]
+            }
+          }
+        }
+      },
+      "visibilityConfig": {
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "CRS_ExceptSize_OnForms",
+        "sampledRequestsEnabled": true
+      }
+    },
+
+    {
+      "name": "AWSManagedRulesCommonRuleSet",
+      "priority": 2,
+      "overrideAction": { "none": {} },
+      "statement": {
+        "managedRuleGroupStatement": {
+          "name": "AWSManagedRulesCommonRuleSet",
+          "vendorName": "AWS",
+          "scopeDownStatement": {
+            "notStatement": {
+              "statement": {
+                "byteMatchStatement": {
+                  "fieldToMatch": { "uriPath": {} },
+                  "positionalConstraint": "STARTS_WITH",
+                  "searchString": "/api/forms",
+                  "textTransformations": [{ "priority": 0, "type": "NONE" }]
+                }
+              }
+            }
+          }
+        }
+      },
+      "visibilityConfig": {
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "AWSCommonRuleSet",
+        "sampledRequestsEnabled": true
+      }
+    },
+
+    {
+      "name": "AWSManagedRulesSQLiRuleSet",
+      "priority": 3,
+      "overrideAction": { "none": {} },
+      "statement": {
+        "managedRuleGroupStatement": {
+          "name": "AWSManagedRulesSQLiRuleSet",
+          "vendorName": "AWS"
+        }
+      },
+      "visibilityConfig": {
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "SQLiRuleSet",
+        "sampledRequestsEnabled": true
+      }
+    },
+
+    {
+      "name": "AWSManagedRulesBotControlRuleSet",
+      "priority": 4,
+      "overrideAction": { "none": {} },
+      "statement": {
+        "managedRuleGroupStatement": {
+          "name": "AWSManagedRulesBotControlRuleSet",
+          "vendorName": "AWS"
+        }
+      },
+      "visibilityConfig": {
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "BotControl",
+        "sampledRequestsEnabled": true
+      }
+    }
+  ]
+}

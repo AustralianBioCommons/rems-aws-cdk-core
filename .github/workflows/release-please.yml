@@ -1,0 +1,24 @@
+name: release-please
+
+# Automated semver releases from Conventional Commits. On merge to main this
+# opens/updates a "release PR" (version bump + CHANGELOG); merging THAT PR tags
+# vX.Y.Z and cuts a GitHub release. Thin repos pin those tags in package.json.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Default GITHUB_TOKEN is fine. Use a PAT here only if you want CI to
+          # run ON the release PR (GITHUB_TOKEN-authored PRs don't trigger it):
+          # token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
