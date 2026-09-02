@@ -33,6 +33,9 @@ export interface Config {
   adotCollectorImage?: string;    // pin the ADOT collector image (prefer a digest)
   jmxAgentUrl?: string;           // source for the JMX Prometheus javaagent jar (prefer an in-account mirror)
   jmxAgentSha256?: string;        // optional checksum; verified when set
+  // --- DNS ---
+  manageDnsRecord?: boolean;      // default true; false = skip lookup + A-record (manage DNS manually)
+  hostedZoneId?: string;          // when managing, use this instead of a name-based lookup
 }
 
 /**
@@ -96,6 +99,11 @@ export function getConfigFromEnv(): Config {
     adotCollectorImage: process.env.ADOT_COLLECTOR_IMAGE,
     jmxAgentUrl: process.env.JMX_AGENT_URL,
     jmxAgentSha256: process.env.JMX_AGENT_SHA256,
+    manageDnsRecord:
+      process.env.MANAGE_DNS_RECORD === undefined
+        ? undefined
+        : process.env.MANAGE_DNS_RECORD !== "false",
+    hostedZoneId: process.env.HOSTED_ZONE_ID,
   };
 }
 
@@ -145,6 +153,8 @@ export interface RawConfig {
   adotCollectorImage?: string;
   jmxAgentUrl?: string;
   jmxAgentSha256?: string;
+  manageDnsRecord?: boolean;
+  hostedZoneId?: string;
 }
 
 /** Map a plain JSON config object to a typed Config. */
@@ -182,6 +192,8 @@ export function configFromJson(raw: RawConfig): Config {
     adotCollectorImage: raw.adotCollectorImage,
     jmxAgentUrl: raw.jmxAgentUrl,
     jmxAgentSha256: raw.jmxAgentSha256,
+    manageDnsRecord: raw.manageDnsRecord,
+    hostedZoneId: raw.hostedZoneId,
   };
 }
 

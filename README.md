@@ -1,92 +1,71 @@
-# REMS AWS CDK Deployment
+# bpsyc-rems-deployment
 
-This project provisions infrastructure for deploying [REMS](https://github.com/CSCfi/rems) on AWS using the [AWS Cloud Development Kit (CDK)](https://docs.aws.amazon.com/cdk/).
+A **thin** REMS deployment for BPSYC (Biological Psychiatry Data Commons). This
+repo holds configuration only; all the CDK logic lives in the shared engine
+[`rems-aws-cdk-core`](https://github.com/AustralianBioCommons/rems-aws-cdk-core),
+pinned in `package.json`.
 
-## 🧱 Infrastructure Overview
-
-The CDK stack provisions:
-
-- VPC with public/private subnets
-- RDS (PostgreSQL) with Secrets Manager integration
-- ECS Fargate service for REMS
-- Application Load Balancer (ALB) with ACM certificate
-- Optional Route 53 support (manual DNS configuration recommended)
-
-## 🚀 Environments
-
-| Branch      | Environment | Description                  |
-|-------------|-------------|------------------------------|
-| `develop`   | Dev         | Auto-deploys on push         |
-| `main`      | Staging     | Deploys after test pass      |
-| `main`      | Production  | Manual approval required     |
-
-## 🔐 GitHub Actions with OIDC
-
-Deployment uses GitHub Actions + AWS IAM OIDC to securely assume roles without secrets.
-
-### Required GitHub Secrets (per environment):
-
-- `AWS_ROLE_ARN_<ENV>`
-- `CDK_REGION_<ENV>`
-- `CDK_ACCOUNT_ID_<ENV>`
-- `VPC_CIDR_<ENV>`
-- `PUBLIC_URL_<ENV>`
-- `CERTIFICATE_ARN_<ENV>`
-- `CONTAINER_IMAGE_<ENV>`
-- `OIDC_SECRET_ARN_<ENV>`
-
-## 🛠 Setup
-
-```bash
-npm install
-npx cdk synth
+```
+bpsyc-rems-deployment/
+├─ bin/app.ts            # ~5 lines: load config/<env>.json -> createRemsApp()
+├─ config/
+│   ├─ dev.json          # committed, NON-SENSITIVE config per environment
+│   ├─ staging.json
+│   └─ prod.json
+├─ .github/workflows/    # OIDC deploy; reads the JSON, needs no GitHub Secrets
+├─ cdk.json              # feature-flag context (copied from the engine)
+├─ cdk.context.json      # EMPTY — never inherit another account's lookups
+└─ package.json          # pins rems-aws-cdk-core#<tag>
 ```
 
-To deploy:
+## Config is committed JSON — and that's deliberate
 
-```bash
-npx cdk deploy --all
-```
+`config/<env>.json` holds only **non-sensitive** values: account IDs, DNS names,
+sizing, and **ARNs**. ARNs (the ACM cert, the deploy role, the three
+`*SecretArn` fields) are *references*, not secret material — the actual secrets
+live in Secrets Manager and IAM controls who can read them. Knowing an ARN
+grants nothing. So this config lives in git in the clear; there are no GitHub
+Secrets to manage.
 
-## 📦 Environment Variables
+**Never** put secret *values* in these files — only the `*SecretArn` pointers.
 
-These are passed at runtime to configure deployment:
+## How isolation & auth work
 
-```bash
-CDK_ACCOUNT_ID=
-CDK_REGION=
-VPC_CIDR=
-PUBLIC_URL=
-CERTIFICATE_ARN=
-CONTAINER_IMAGE=
-DB_NAME=rems
-DB_USER=rems
-POSTGRES_VERSION=17.4
-DB_INSTANCE_SIZE=micro
-DB_INSTANCE_CLASS=burstable3
-```
+Each project deploys into **its own AWS account**, so identical stack/resource
+names never collide — the account boundary is the isolation. The pipeline's only
+privilege is assuming this project's `deployRoleArn` via GitHub OIDC; that role's
+**trust policy** (scoped to this repo + environment) is the security boundary,
+not secrecy of any string in this repo.
 
-## ⚠️ DNS Setup
+## Create a new project from this template
 
-DNS records (e.g. `rems.example.org`) must be configured manually in Route 53 or another provider after deployment.
+1. Clone/rename this repo (`<project>-rems-deployment`).
+2. Edit `config/*.json`: replace the `REPLACE_*` placeholders (account IDs, cert
+   ARN, secret ARNs, host names) with this project's real, non-sensitive values.
+3. Create the OIDC deploy role in each target account, trust-scoped to this repo.
+4. Point `rems-aws-cdk-core` in `package.json` at the engine version to pin.
+5. Push to `develop` (-> dev) or `main` (-> staging -> prod).
 
-## 🧪 Testing
+## DNS record
 
-Unit tests run automatically on every branch via GitHub Actions.
+By default CDK creates the ALB alias record for `hostName` in the zone named by
+`hostZone` (a name-based Route 53 lookup). Two escape hatches:
 
-## 🧪 DB Migration
+- **Manage DNS manually.** Set `"manageDnsRecord": false` in the env config —
+  CDK then skips the lookup and the record entirely. Point your own record at
+  the `LoadBalancerDnsName` stack output. Use this for centralised/cross-account
+  DNS, or when the zone lives in another account.
+- **Skip the lookup.** Keep `manageDnsRecord: true` and set `"hostedZoneId":
+  "<Z...>"`; CDK uses that id directly (deterministic, no synth-time lookup or
+  credentials) instead of searching by name.
 
-Running DB migration
+## Upgrading the engine
 
-Obtain the migration task definition from the console or CLI, and then run the command below:
-```
-  aws ecs run-task \
-  --cluster Rems \
-  --launch-type FARGATE \
-  --task-definition REMSMigrationTaskRemsMigrateTaskDefxxxxx \
-  --network-configuration 'awsvpcConfiguration={subnets=[subnet-xxxxxxxx],securityGroups=[sg-xxxxxxxx],assignPublicIp=DISABLED}'
-```
+Bump the `rems-aws-cdk-core` tag in `package.json`, run `npx cdk diff` against
+this project's account, review, merge. The pin is per-repo, so an engine change
+for another project never reaches this one until you bump it here.
 
----
+## Safety
 
-Maintained by Australian BioCommons / REMS deployment team.
+`npx cdk diff` runs before every deploy. Nothing in this repo can touch another
+project's stacks — different account, different deploy role.

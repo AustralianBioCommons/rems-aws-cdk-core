@@ -1,4 +1,4 @@
-import { Stack, StackProps, Duration, RemovalPolicy } from "aws-cdk-lib";
+import { Stack, StackProps, Duration, RemovalPolicy, CfnOutput } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { ISecret, Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Vpc, SubnetType, SecurityGroup, Port, Peer } from "aws-cdk-lib/aws-ec2";
@@ -371,14 +371,35 @@ export class ComputeStack extends Stack {
       webAclArn: webAclArn.stringValue,
     });
 
-    const zone = route53.HostedZone.fromLookup(this, "HostedZone", {
-      domainName: config.hostZone,
-    });
+    // DNS is optional. Default: CDK creates the ALB alias record. Set
+    // manageDnsRecord=false to skip the hosted-zone lookup and the record
+    // entirely and manage DNS by hand (e.g. centralised/cross-account DNS) —
+    // point your own record at the ALB output below. When managing, an explicit
+    // hostedZoneId avoids the name-based lookup (deterministic, no synth-time
+    // context/credentials needed).
+    const manageDns = config.manageDnsRecord ?? true;
+    if (manageDns) {
+      const zone = config.hostedZoneId
+        ? route53.HostedZone.fromHostedZoneAttributes(this, "HostedZone", {
+            hostedZoneId: config.hostedZoneId,
+            zoneName: config.hostZone,
+          })
+        : route53.HostedZone.fromLookup(this, "HostedZone", {
+            domainName: config.hostZone,
+          });
 
-    new route53.ARecord(this, "RemsAliasRecord", {
-      zone,
-      target: route53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(lb)),
-      recordName: config.hostName,
+      new route53.ARecord(this, "RemsAliasRecord", {
+        zone,
+        target: route53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(lb)),
+        recordName: config.hostName,
+      });
+    }
+
+    // Always surface the ALB DNS so DNS can be pointed at it manually when
+    // manageDnsRecord is false (and for convenience otherwise).
+    new CfnOutput(this, "LoadBalancerDnsName", {
+      value: lb.loadBalancerDnsName,
+      description: `Point ${config.hostName} at this ALB (CNAME/ALIAS) if managing DNS manually`,
     });
   }
 }
