@@ -376,7 +376,9 @@ export class ComputeStack extends Stack {
     // entirely and manage DNS by hand (e.g. centralised/cross-account DNS) —
     // point your own record at the ALB output below. When managing, an explicit
     // hostedZoneId avoids the name-based lookup (deterministic, no synth-time
-    // context/credentials needed).
+    // context/credentials needed). 
+    // If manageDnsRecord is true (or undefined), the hosted zone is 
+    // looked up by name and an ALIAS record is created for the ALB.
     const manageDns = config.manageDnsRecord ?? true;
     if (manageDns) {
       const zone = config.hostedZoneId
