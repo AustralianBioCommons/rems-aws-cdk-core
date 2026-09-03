@@ -1,0 +1,66 @@
+name: deploy-rems-reusable
+
+# Reusable workflow: deployment repos call this with a config path + role.
+# It checks out the caller's config AND this engine, builds a runtime config
+# (injects account, filters to the target stage), then cdk deploys.
+on:
+  workflow_call:
+    inputs:
+      config_path:        { required: true,  type: string }   # path in the CALLER repo, e.g. infra/rems/rems.json
+      target:             { required: true,  type: string }   # envKey: test | prod
+      github_environment: { required: true,  type: string }
+      aws_region:         { required: true,  type: string }
+      role_to_assume:     { required: true,  type: string }
+      stack_selector:     { required: false, type: string, default: "--all" }
+      engine_ref:         { required: false, type: string, default: "main" }
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.github_environment }}
+    steps:
+      - name: Checkout deployment repo (config)      # default checkout = caller repo
+        uses: actions/checkout@v4
+
+      - name: Checkout engine
+        uses: actions/checkout@v4
+        with:
+          repository: AustralianBioCommons/rems-aws-cdk-core
+          ref: ${{ inputs.engine_ref }}
+          path: .engine
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install engine deps
+        working-directory: .engine
+        run: npm ci
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.role_to_assume }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Build runtime config (inject account, filter env)
+        env:
+          AWS_REGION: ${{ inputs.aws_region }}
+        run: |
+          .engine/scripts/build-runtime-config.sh \
+            "${{ inputs.config_path }}" \
+            ".engine/config.runtime.json" \
+            "${{ inputs.target }}"
+
+      - name: CDK deploy
+        working-directory: .engine
+        env:
+          REMS_CONFIG: config.runtime.json
+          TARGET_ENV: ${{ inputs.target }}
+        run: |
+          npx cdk diff  ${{ inputs.stack_selector }} || true
+          npx cdk deploy ${{ inputs.stack_selector }} --require-approval never
