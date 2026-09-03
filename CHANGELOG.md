@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/rems-aws-cdk-core-v0.1.6...rems-aws-cdk-core-v0.1.7) (2026-09-03)
+
+
+### Bug Fixes
+
+* workflow ([8d02af2](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/8d02af223b259664b046d15ac7caea4fb97d3489))
+* workflow ([06be85d](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/06be85d7e7cbacabcbae264095dcd4d15a404b79))
+
 ## [0.1.6](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/rems-aws-cdk-core-v0.1.5...rems-aws-cdk-core-v0.1.6) (2026-09-03)
 
 
