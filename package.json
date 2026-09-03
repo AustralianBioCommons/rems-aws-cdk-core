@@ -1,6 +1,6 @@
 {
   "name": "rems-aws-cdk-core",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "description": "Shared REMS-on-AWS CDK engine, consumed by per-project thin deployment repos.",
   "main": "index.js",
   "types": "index.d.ts",
