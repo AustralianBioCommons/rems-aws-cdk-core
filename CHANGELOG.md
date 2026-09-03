@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/v0.1.4...v0.1.5) (2026-09-03)
+
+
+### Bug Fixes
+
+* cdk lib bump ([cd98c84](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/cd98c8431172f0f69b7ec356138f35e6442b9e6a))
+* cdk lib bump ([dba2d54](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/dba2d54c10b138363b9897285bfed2fcde8538a3))
+
 ## [0.1.4](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/v0.1.3...v0.1.4) (2026-09-02)
 
 
