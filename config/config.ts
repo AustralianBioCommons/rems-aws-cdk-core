@@ -210,7 +210,9 @@ export function getPostgresEngineVersion(version: string): PostgresEngineVersion
     case "15.9": return PostgresEngineVersion.VER_15_9;
     case "16.8": return PostgresEngineVersion.VER_16_8;
     case "17.4": return PostgresEngineVersion.VER_17_4;
-    default: throw new Error(`Unsupported Postgres version: ${version}`);
+    // Any other RDS-supported version: derive the major from the string.
+    // Lets config track AWS adding/retiring minors without an engine change.
+    default: return PostgresEngineVersion.of(version, version.split(".")[0]);
   }
 }
 
@@ -231,4 +233,81 @@ export function getDBInstanceClass(cls: string): InstanceClass {
     case "memory": return InstanceClass.MEMORY5;
     default: throw new Error(`Unsupported DB instance class: ${cls}`);
   }
+}
+// ---------------------------------------------------------------------------
+// Gen3-style runtime config (config-only deploy repo + reusable workflow).
+// The deploy repo commits desired-state JSON; the reusable workflow injects the
+// account and filters to one stage, then this maps that stage to a Config.
+// ---------------------------------------------------------------------------
+export interface RemsStage {
+  id: string;
+  stageName: string;
+  envKey: string;
+  rems: {
+    vpcCidr: string;
+    natGateways?: number;
+    publicUrl: string;
+    requestorUrl: string;
+    containerImage: string;
+    certificateArn: string;
+    dns: { manageRecord?: boolean; hostZone: string; hostName: string; hostedZoneId?: string | null };
+    database?: { engineVersion?: string; instanceSize?: string; instanceClass?: string; retentionDays?: number; name?: string; user?: string };
+    secrets: { oidcClientSecretArn: string; remsTokenSecretArn: string; webhookSecretArn: string };
+    monitoring?: { ampWorkspaceId?: string; monitoringAccountId?: string; oamSinkId?: string; prometheusRole?: string };
+  };
+  approvals?: { requireManualApproval?: boolean };
+}
+
+export interface RemsRuntimeConfig {
+  project: string;
+  application?: string;
+  owner?: string;
+  naming?: { namePrefix?: string; ssmPrefix?: string; secretPrefix?: string };
+  environments: Record<string, { name: string; account: string; region: string }>;
+  stages: RemsStage[];
+}
+
+/** Map one stage of a runtime config (already account-injected, env-filtered) to Config. */
+export function configFromStage(rc: RemsRuntimeConfig, envKey: string): Config {
+  const stage = rc.stages.find((s) => s.envKey === envKey);
+  if (!stage) throw new Error(`No stage found for envKey=${envKey}`);
+  const env = rc.environments[envKey];
+  if (!env) throw new Error(`No environment found for envKey=${envKey}`);
+  const r = stage.rems;
+  return configFromJson({
+    project: (rc.project ?? "rems").toUpperCase(),
+    owner: rc.owner ?? "biocloud",
+    deployEnvironment: envKey,
+    accountId: env.account,
+    region: env.region,
+    vpcCidr: r.vpcCidr,
+    natGatewayCount: r.natGateways,
+    publicUrl: r.publicUrl,
+    hostName: r.dns.hostName,
+    hostZone: r.dns.hostZone,
+    hostedZoneId: r.dns.hostedZoneId ?? undefined,
+    manageDnsRecord: r.dns.manageRecord,
+    certificateArn: r.certificateArn,
+    containerImage: r.containerImage,
+    requestorUrl: r.requestorUrl,
+    dbName: r.database?.name,
+    dbUser: r.database?.user,
+    postgresVersion: r.database?.engineVersion,
+    dbInstanceSize: r.database?.instanceSize,
+    dbInstanceClass: r.database?.instanceClass,
+    dbRetention: r.database?.retentionDays,
+    oidcClientSecretArn: r.secrets.oidcClientSecretArn,
+    remsTokenSecretArn: r.secrets.remsTokenSecretArn,
+    webhookSecretArn: r.secrets.webhookSecretArn,
+    ampWorkspaceId: r.monitoring?.ampWorkspaceId,
+    monitoringAccountId: r.monitoring?.monitoringAccountId,
+    monitoringPrometheusRole: r.monitoring?.prometheusRole,
+    monitoringOamSinkId: r.monitoring?.oamSinkId,
+  } as RawConfig);
+}
+
+/** Load a runtime config file and map the selected stage to Config. */
+export function loadRuntimeConfig(filePath: string, envKey: string): Config {
+  const rc = JSON.parse(fs.readFileSync(filePath, "utf-8")) as RemsRuntimeConfig;
+  return configFromStage(rc, envKey);
 }
