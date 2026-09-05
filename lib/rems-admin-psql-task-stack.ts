@@ -9,7 +9,10 @@ import {
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
-interface RemsAdminPsqlTaskProps extends StackProps {}
+interface RemsAdminPsqlTaskProps extends StackProps {
+  /** ECR image for the psql/admin utils container. */
+  adminTaskContainerImage?: string;
+}
 
 export class RemsAdminPsqlTaskStack extends Stack {
   constructor(scope: Construct, id: string, props: RemsAdminPsqlTaskProps) {
@@ -35,7 +38,10 @@ export class RemsAdminPsqlTaskStack extends Stack {
     });
 
     taskDef.addContainer("PsqlContainer", {
-      image: ecs.ContainerImage.fromRegistry("232870232581.dkr.ecr.ap-southeast-2.amazonaws.com/rems-admin-utils:master"),
+      image: ecs.ContainerImage.fromRegistry(
+        props.adminTaskContainerImage ??
+          "232870232581.dkr.ecr.ap-southeast-2.amazonaws.com/rems-admin-utils:master"
+      ),
       command: ["/bin/sh", "-c", "sleep 3600"], // Long sleep to allow exec
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: "rems-admin", logGroup }),
     });

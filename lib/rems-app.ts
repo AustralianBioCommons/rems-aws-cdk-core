@@ -96,7 +96,7 @@ export function createRemsApp(app: App, config: Config): RemsAppStacks {
   const adminTask = new RemsAdminPsqlTaskStack(
     app,
     `Rems-Admin-Sql-Tasks-${config.deployEnvironment}`,
-    { env }
+    { env, adminTaskContainerImage: config.adminTaskContainerImage }
   );
 
   // --- Workload-side observability -----------------------------------------
