@@ -64,7 +64,7 @@ function originalApp(): App {
   computeStack.addDependency(wafStack);
   const remsMigrationStack = new RemsMigrationTask(app, `REMS-MigrationTask-${config.deployEnvironment}`, { cluster: computeStack.cluster, vpc: networkStack.vpc, containerImage: config.containerImage, config, env });
   remsMigrationStack.addDependency(databaseStack);
-  new RemsAdminPsqlTaskStack(app, `Rems-Admin-Sql-Tasks-${config.deployEnvironment}`, { env });
+  new RemsAdminPsqlTaskStack(app, `Rems-Admin-Sql-Tasks-${config.deployEnvironment}`, { env, adminTaskContainerImage: config.adminTaskContainerImage });
   return app;
 }
 

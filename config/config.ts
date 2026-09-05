@@ -11,6 +11,7 @@ export interface Config {
   hostZone: string;
   certificateArn: string;
   containerImage: string;
+  adminTaskContainerImage?: string;
   dbName: string;
   dbUser: string;
   postgresVersion: PostgresEngineVersion;
@@ -69,6 +70,7 @@ export function getConfigFromEnv(): Config {
       process.env.CERTIFICATE_ARN ||
       "arn:aws:acm:region:account:certificate/dev",
     containerImage: process.env.CONTAINER_IMAGE || "cscfi/rems:latest",
+    adminTaskContainerImage: process.env.ADMIN_TASK_IMAGE,
     dbName: process.env.DB_NAME || "rems",
     dbUser: process.env.DB_USER || "rems",
     postgresVersion: getPostgresEngineVersion(
@@ -131,6 +133,7 @@ export interface RawConfig {
   hostZone: string;
   certificateArn: string;
   containerImage: string;
+  adminTaskContainerImage?: string;
   deployEnvironment: string;
   oidcClientSecretArn: string;
   remsTokenSecretArn: string;
@@ -174,6 +177,7 @@ export function configFromJson(raw: RawConfig): Config {
     hostZone: raw.hostZone,
     certificateArn: raw.certificateArn,
     containerImage: raw.containerImage,
+    adminTaskContainerImage: raw.adminTaskContainerImage,
     dbName: raw.dbName ?? "rems",
     dbUser: raw.dbUser ?? "rems",
     postgresVersion: getPostgresEngineVersion(raw.postgresVersion ?? "17.4"),
@@ -249,6 +253,7 @@ export interface RemsStage {
     publicUrl: string;
     requestorUrl: string;
     containerImage: string;
+    adminTaskImage?: string;
     certificateArn: string;
     dns: { manageRecord?: boolean; hostZone: string; hostName: string; hostedZoneId?: string | null };
     database?: { engineVersion?: string; instanceSize?: string; instanceClass?: string; retentionDays?: number; name?: string; user?: string };
@@ -289,6 +294,7 @@ export function configFromStage(rc: RemsRuntimeConfig, envKey: string): Config {
     manageDnsRecord: r.dns.manageRecord,
     certificateArn: r.certificateArn,
     containerImage: r.containerImage,
+    adminTaskContainerImage: r.adminTaskImage,
     requestorUrl: r.requestorUrl,
     dbName: r.database?.name,
     dbUser: r.database?.user,
