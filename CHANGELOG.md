@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.8](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/rems-aws-cdk-core-v0.1.7...rems-aws-cdk-core-v0.1.8) (2026-09-05)
+
+
+### Bug Fixes
+
+* admin task image param ([311f0a8](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/311f0a8ea210cbe0a1a415ea8a389bb9b9ea4421))
+* admin task image param ([5705f28](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/5705f2867bfca5bbf6dd869b8bcbd106d735b14b))
+
 ## [0.1.7](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/rems-aws-cdk-core-v0.1.6...rems-aws-cdk-core-v0.1.7) (2026-09-03)
 
 
