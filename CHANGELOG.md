@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/rems-aws-cdk-core-v0.1.8...rems-aws-cdk-core-v0.1.9) (2026-09-29)
+
+
+### Bug Fixes
+
+* create S3 interface endpoint after the gateway endpoint ([#15](https://github.com/AustralianBioCommons/rems-aws-cdk-core/issues/15)) ([3449852](https://github.com/AustralianBioCommons/rems-aws-cdk-core/commit/344985267fd62b7e4fc6fe6485c92bdb07211e8e))
+
 ## [0.1.8](https://github.com/AustralianBioCommons/rems-aws-cdk-core/compare/rems-aws-cdk-core-v0.1.7...rems-aws-cdk-core-v0.1.8) (2026-09-05)
 
 
