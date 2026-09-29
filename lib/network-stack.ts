@@ -50,15 +50,19 @@ export class NetworkStack extends Stack {
       "Allow port HTTPS from all vpc traffic"
     );
 
-    this.vpc.addGatewayEndpoint("S3GatewayEndpoint", {
+    const s3GatewayEndpoint = this.vpc.addGatewayEndpoint("S3GatewayEndpoint", {
       service: GatewayVpcEndpointAwsService.S3,
     });
 
-    new InterfaceVpcEndpoint(this, "S3Endpoint", {
+    const s3InterfaceEndpoint = new InterfaceVpcEndpoint(this, "S3Endpoint", {
       vpc: this.vpc,
       service: InterfaceVpcEndpointAwsService.S3,
       securityGroups: [endpointSecurityGroup],
     });
+    // With private DNS on, EC2 sets PrivateDnsOnlyForInboundResolverEndpoint for
+    // S3, which requires the gateway endpoint to exist first. Without this, the
+    // two are created in parallel and a fresh VPC can fail to create.
+    s3InterfaceEndpoint.node.addDependency(s3GatewayEndpoint);
 
     new InterfaceVpcEndpoint(this, "SSMEndpoint", {
         vpc: this.vpc,
